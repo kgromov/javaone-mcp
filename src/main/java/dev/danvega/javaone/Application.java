@@ -6,12 +6,15 @@ import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.transport.StdioServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class Application {
 
+    private static final Logger log = LoggerFactory.getLogger(Application.class);
     private static final PresentationTools presentationTools = new PresentationTools();
 
     public static void main(String[] args) {
@@ -26,14 +29,13 @@ public class Application {
                 .serverInfo("javaone-mcp-server", "0.0.1")
                 .capabilities(McpSchema.ServerCapabilities.builder()
                         .tools(true)
+                        .logging()
                         .build())
+                // Register tools, resources, and prompts
+                .tools(syncToolSpecification)
                 .build();
 
-        // Register tools, resources, and prompts
-        syncServer.addTool(syncToolSpecification);
-
-        // Close the server when done
-        syncServer.close();
+        log.info("Starting JavaOne MCP Server...");
     }
 
     private static McpServerFeatures.SyncToolSpecification getSyncToolSpecification() {
