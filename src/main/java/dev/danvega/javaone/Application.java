@@ -22,7 +22,6 @@ public class Application {
         // Stdio Server Transport (Support for SSE also available)
         var transportProvider = new StdioServerTransportProvider(new ObjectMapper());
         // Sync tool specification
-        var syncToolSpecification = getSyncToolSpecification();
 
         // Create a server with custom configuration
         McpSyncServer syncServer = McpServer.sync(transportProvider)
@@ -32,7 +31,7 @@ public class Application {
                         .logging()
                         .build())
                 // Register tools, resources, and prompts
-                .tools(syncToolSpecification)
+                .tools(getSyncToolSpecification(), searchSyncToolByTitleSpecification())
                 .build();
 
         log.info("Starting JavaOne MCP Server...");
@@ -40,17 +39,17 @@ public class Application {
 
     private static McpServerFeatures.SyncToolSpecification getSyncToolSpecification() {
         var schema = """
-            {
-              "type" : "object",
-              "id" : "urn:jsonschema:Operation",
-              "properties" : {
-                "operation" : {
-                  "type" : "string"
+                {
+                  "type" : "object",
+                  "id" : "urn:jsonschema:Operation",
+                  "properties" : {
+                    "operation" : {
+                      "type" : "string"
+                    }
+                  }
                 }
-              }
-            }
-            """;
-        var syncToolSpecification = new McpServerFeatures.SyncToolSpecification(
+                """;
+        return new McpServerFeatures.SyncToolSpecification(
                 new McpSchema.Tool("get_presentations", "Get a list of all presentations from JavaOne", schema),
                 (exchange, arguments) -> {
                     // Tool implementation
@@ -62,7 +61,34 @@ public class Application {
                     return new McpSchema.CallToolResult(contents, false);
                 }
         );
-        return syncToolSpecification;
+    }
+
+    private static McpServerFeatures.SyncToolSpecification searchSyncToolByTitleSpecification() {
+        var schema = """
+                {
+                  "type" : "object",
+                  "id" : "urn:jsonschema:Operation",
+                  "properties" : {
+                    "query" : {
+                      "type" : "string"
+                    }
+                  }
+                }
+                """;
+        return new McpServerFeatures.SyncToolSpecification(
+                new McpSchema.Tool("search_presentations", "Search presentations by title", schema),
+                (exchange, arguments) -> {
+                    log.info("Arguments: {}", arguments);
+                    String query = String.valueOf(arguments.get("query"));
+                    log.info("Query: {}", query);
+                    List<Presentation> presentations = presentationTools.searchPresentationsByTitle(query);
+                    List<McpSchema.Content> contents = new ArrayList<>();
+                    for (Presentation presentation : presentations) {
+                        contents.add(new McpSchema.TextContent(presentation.toString()));
+                    }
+                    return new McpSchema.CallToolResult(contents, false);
+                }
+        );
     }
 
 }

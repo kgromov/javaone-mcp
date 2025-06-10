@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static java.util.Objects.isNull;
+
+
 public class PresentationTools {
 
     private List<Presentation> presentations = new ArrayList<>();
@@ -27,6 +30,15 @@ public class PresentationTools {
 
     public List<Presentation> getPresentationsByYear(int year) {
         return presentations.stream().filter(p -> p.year() == year).toList();
+    }
+
+    public List<Presentation> searchPresentationsByTitle(String title) {
+        if (isNull(title) || title.isBlank()) {
+            return presentations;
+        }
+        return presentations.stream()
+                .filter(p -> p.title().toLowerCase().contains(title.toLowerCase()))
+                .toList();
     }
 
     public List<Map<String, Object>> getPresentationsAsMapList() {
